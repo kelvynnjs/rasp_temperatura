@@ -1,61 +1,75 @@
-import board
-import digitalio
-import adafruit_dht
+import os
+import time
+import Adafruit_DHT
 import openpyxl
 
+# Configure the DHT22 sensor
+dispositivo = Adafruit_DHT.DHT22
+PIN = 4
 
 def iniciar():
-    # Configure o sensor DHT22
-    dispositivo_dht = adafruit_dht.DHT22(board.D4)
-    # Crie uma nova planilha e adicione uma aba
+    # Create a new spreadsheet and add a new sheet
     wb = openpyxl.Workbook()
     sheet1 = wb.active
-    # Escreva a linha de cabeçalho
+    # Write the header row
     sheet1.append(['Dia do Mês', 'Temperatura (C)', 'Umidade', 'Hora da Leitura', 'Temperatura Média (C)'])
-    # Inicialize variáveis para manter o controle da temperatura total e do número de leituras por dia
+    # Initialize variables to keep track of the total temperature and the number of readings per day
     dia_atual = None
     temperatura_total = 0
     num_leituras = 0
-    # Defina uma lista de horários que indicam quando os dados devem ser armazenados
-    horarios_verificacao = ["08:00:00", "12:00:00", "16:00:00", "20:00:00"]
-    # Inicialize um contador para manter o controle do horário atual
+    # Define a list of times that indicate when data should be stored
+    horarios_verificacao = ["02:24","08:00", "12:00", "16:00", "20:00"]
+    # Initialize a counter to keep track of the current time
     indice_horario = 0
     print("Iniciando a aplicação de controle")
-    print("Horários configurados para leitura: " + horarios_verificacao)
-    # Leia a temperatura e a umidade nos horários especificados
-    while indice_horario < len(horarios_verificacao):
-        # Leia os dados do sensor
-        temperatura = dispositivo_dht.temperature
-        umidade = dispositivo_dht.humidity
+    print("Horários configurados para leitura: " + str(horarios_verificacao))
 
-        # Obtenha a data e hora atuais
+    # Read the temperature and humidity at the specified times
+    while True:
+        # Read data from the sensor
+        umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
+
+        # Get the current date and time
         from datetime import datetime
 
         agora = datetime.now()
+        tempo = agora.strftime("%H:%M")
+        print(tempo)
 
-        # Verifique se o horário atual é um horário a ser verificado
-        if agora.strftime("%H:%M:%S") == horarios_verificacao[indice_horario]:
-            # Verifique se o dia atual é diferente da leitura anterior
+        # Check if the current time is a time to be checked
+        if tempo == horarios_verificacao[indice_horario]:
+            # Check if the current day is different from the previous reading
             if agora.day != dia_atual:
-                # Se o dia atual for diferente, calcule a temperatura média para o dia anterior
+                # If the current day is different, calculate the average temperature for the previous day
                 if dia_atual is not None:
-                    temperatura_media = temperatura_total / num_leituras
+                    temperatura_media = "{:.2f}".format(temperatura_total / num_leituras)
                     sheet1.append([dia_atual, '', '', '', temperatura_media])
 
-                # Redefina a temperatura total e o número de leituras para o novo dia
+                # Reset the total temperature and number of readings for the new day
                 dia_atual = agora.day
                 temperatura_total = 0
                 num_leituras = 0
 
-            # Adicione a temperatura atual à temperatura total e incremente o número de leituras
+            # Add the current temperature to the total temperature and increment the number of readings
             temperatura_total += temperatura
             num_leituras += 1
-    # Escreva os dados na planilha
-    sheet1.append([agora.day, temperatura, umidade, agora.strftime("%H:%M:%S"), ''])
-    # Incremente o índice de horário
-    indice_horario += 1
-    # Calcule a temperatura média para o último dia
+
+        # Write the data to the spreadsheet
+        sheet1.append([agora.day, temperatura, umidade, agora.strftime("%H:%M:%S"), ''])
+        # Increment the time index
+        indice_horario += 1
+        # If the time index is at the end of the list, reset it to 0
+        if indice_horario == len(horarios_verificacao):
+            indice_horario = 0
+        # Sleep for 1 second before checking the time again
+        time.sleep(1)
+
+    # Calculate the average temperature for the last day
     temperatura_media = temperatura_total / num_leituras
     sheet1.append([dia_atual, '', '', '', temperatura_media])
-    # Salve a planilha
+    # Save the spreadsheet
     wb.save('controle_temperatura.xlsx')
+
+# Start the application
+iniciar()
+
