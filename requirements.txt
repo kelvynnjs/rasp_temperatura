@@ -1,2 +1,3 @@
 openpyxl
 adafruit-circuitpython-dht
+lazy_import
