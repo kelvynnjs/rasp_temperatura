@@ -1,21 +1,18 @@
-import importlib
 import json
+import multiprocessing
 import os
-import time
+import threading
 
-import importlib
+from flask import Flask, request, render_template, make_response
 
-# Import test module in a lazy way
-leitor_rasp = importlib.import_module("leitor_rasp")
-
-from flask import Flask, request, render_template, send_file, make_response
+from leitor_rasp import iniciar
 
 app = Flask(__name__, template_folder='templates')
 
 # Define the flag variable
 stop_flag = False
 
-print("stop_flag: ",stop_flag)
+print("stop_flag: ", stop_flag)
 
 # Initialize the fields_data.json file with default values
 if not os.path.exists('fields_data.json'):
@@ -39,39 +36,43 @@ def index():
     return render_template('index.html', horarios_verificacao=horarios_verificacao)
 
 
-# INICIA A APLICAÇÃO
+thread = None
+
+
 @app.route('/start', methods=['POST'])
 def start_app():
+    global thread
     global stop_flag
 
-    horarios = json.loads(request.form.get('horarios'))
-    print("horarios", horarios)
+    if thread is None or not thread.is_alive():
+        stop_flag = multiprocessing.Value('i', 0)
+        horarios = json.loads(request.form.get('horarios'))
+        print("horarios", horarios)
 
-    print(request.form.keys())
+        # Load the stored fields data
+        update_fields_data(horarios)
+        # Set the stop flag to False to start the iniciar() function
 
-    # Load the stored fields data
-
-    updateFieldsData(horarios)
-
-    leitor_rasp.iniciar(horarios)
-
-    # Set the stop flag to False to start the iniciar() function
-    stop_flag = False
-
-    return 'Aplicação iniciada'
+        # Start the iniciar() function in a new thread
+        thread = threading.Thread(target=iniciar, args=(horarios, stop_flag))
+        thread.start()
+        return 'Aplicação iniciada'
+    else:
+        return 'A aplicação já está em execução'
 
 
 # Define the route for the stop action
 @app.route('/stop', methods=['POST'])
 def stop_app():
+    global thread
     global stop_flag
-    # Set the stop flag to True to stop the iniciar() function
-    print("Tentando encerrar")
-    leitor_rasp.parar()
-    print("stop_flag: ", stop_flag)
-    # Release the mutex to allow other threads to acquire it
-    # mutex.release()
-    return 'Aplicação interrompida com sucesso!'
+    # Terminate the current thread
+
+    # Set the stop flag to 1 to stop the iniciar() function
+    stop_flag.value = 1
+    thread.join(timeout=4)
+    msg = 'Aplicação interrompida com sucesso!'
+    return msg
 
 
 @app.route('/download')
@@ -84,11 +85,10 @@ def download():
     # Read the contents of the file into memory
     with open("dados.xlsx", "rb") as f:
         response.data = f.read()
-
     return response
 
 
-def updateFieldsData(horarios_verificacao):
+def update_fields_data(horarios_verificacao):
     # Load the current fields data from the fields_data.json file
     with open('fields_data.json', 'r') as f:
         fields_data = json.load(f)
@@ -99,21 +99,6 @@ def updateFieldsData(horarios_verificacao):
     # Save the updated fields data to the fields_data.json file
     with open('fields_data.json', 'w') as f:
         json.dump(fields_data, f)
-
-
-
-
-
-# def iniciar(horarios=None):
-#     global stop_flag
-#     while not stop_flag:
-#         print("Executando")
-#         print(horarios)
-#         time.sleep(2)
-#         if stop_flag:
-#             break
-#     print("Encerrando ------------")
-
 
 
 if __name__ == '__main__':
