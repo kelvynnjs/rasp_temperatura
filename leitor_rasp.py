@@ -5,10 +5,10 @@ import threading
 import multiprocessing
 from openpyxl.styles import Font
 
-# import Adafruit_DHT ---
+import Adafruit_DHT
 
 # Configure the DHT22 sensor
-# dispositivo = Adafruit_DHT.DHT22 ---
+dispositivo = Adafruit_DHT.DHT22
 PIN = 4
 
 # Define the flag variable
@@ -20,7 +20,8 @@ mutex = threading.Lock()
 stop_flag = multiprocessing.Value('i', 0)
 
 
-def iniciar(horarios, stop):
+
+def iniciar(horarios, stop_event):
     # global stop_flag
     try:
 
@@ -77,12 +78,12 @@ def iniciar(horarios, stop):
         previous_minute = None
 
         # Read the temperature and humidity at the specified times
-        while not stop.value:
-            print("Stop: ", stop.value)
+        while not stop_event.is_set():
+            # print("Stop: ", stop.value)
             # Read data from the sensor
-            # umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
+            umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
 
-            umidade, temperatura = 1, 2
+            # umidade, temperatura = 1, 2
 
             # Get the current date and time
             from datetime import datetime
@@ -94,9 +95,6 @@ def iniciar(horarios, stop):
             # Check if the current time is a time to be checked
             if tempo == horarios_verificacao[indice_horario]:
                 print("Verificando temperatura as: ", tempo)
-
-                if stop.value or stop_flag:
-                    break
 
                 # Check if the current day is different from the previous reading
                 if agora.day != dia_atual:

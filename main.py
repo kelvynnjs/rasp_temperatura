@@ -14,6 +14,10 @@ stop_flag = False
 
 print("stop_flag: ", stop_flag)
 
+import threading
+
+stop_event = threading.Event()
+
 # Initialize the fields_data.json file with default values
 if not os.path.exists('fields_data.json'):
     with open('fields_data.json', 'w') as f:
@@ -38,42 +42,45 @@ def index():
 
 thread = None
 
-
+# Define the Event object
+stop_event = threading.Event()
 @app.route('/start', methods=['POST'])
 def start_app():
     global thread
-    global stop_flag
+    global stop_event
 
-    if thread is None or not thread.is_alive():
-        stop_flag = multiprocessing.Value('i', 0)
-        horarios = json.loads(request.form.get('horarios'))
-        print("horarios", horarios)
-
-        # Load the stored fields data
-        update_fields_data(horarios)
-        # Set the stop flag to False to start the iniciar() function
-
-        # Start the iniciar() function in a new thread
-        thread = threading.Thread(target=iniciar, args=(horarios, stop_flag))
-        thread.start()
-        return 'Aplicação iniciada'
-    else:
+    # Check if the thread is already running
+    if thread is not None and thread.is_alive():
         return 'A aplicação já está em execução'
 
+    # Create a new event object
+    stop_event = threading.Event()
 
-# Define the route for the stop action
+    horarios = json.loads(request.form.get('horarios'))
+    print("horarios", horarios)
+
+    # Load the stored fields data
+    update_fields_data(horarios)
+
+    # Start the iniciar() function in a new thread
+    thread = threading.Thread(target=iniciar, args=(horarios, stop_event))
+    thread.start()
+    return 'Aplicação iniciada'
+
+
+
 @app.route('/stop', methods=['POST'])
 def stop_app():
     global thread
-    global stop_flag
-    # Terminate the current thread
-
-    # Set the stop flag to 1 to stop the iniciar() function
-    stop_flag.value = 1
-    thread.join(timeout=4)
+    global stop_event
+    # Set the stop event to signal the iniciar() function to stop
+    stop_event.set()
+    # Wait for the iniciar() function to finish
+    thread.join()
+    # Reset the stop event
+    stop_event.clear()
     msg = 'Aplicação interrompida com sucesso!'
     return msg
-
 
 @app.route('/download')
 def download():
