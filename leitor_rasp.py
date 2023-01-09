@@ -80,18 +80,6 @@ def iniciar(horarios, stop_event):
         # Read the temperature and humidity at the specified times
         while not stop_event.is_set():
             # print("Stop: ", stop.value)
-            # Read data from the sensor
-
-            # umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
-            URL: str = "http://192.168.1.5:5000"
-
-            data = requests.get(url=URL).json()
-            print("data: ", data)
-
-            temperatura = data["temperatura"]
-            umidade = data["umidade"]
-            print("temperatura", temperatura)
-            print("umidade", umidade)
 
             # umidade, temperatura = 1, 2
 
@@ -105,6 +93,19 @@ def iniciar(horarios, stop_event):
             # Check if the current time is a time to be checked
             if tempo == horarios_verificacao[indice_horario]:
                 print("Verificando temperatura as: ", tempo)
+
+                # Read data from the sensor
+
+                # umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
+                URL: str = "http://192.168.1.5:5000"
+
+                data = requests.get(url=URL).json()
+                print("data: ", data)
+
+                temperatura = data["temperatura"]
+                umidade = data["umidade"]
+                print("temperatura", temperatura)
+                print("umidade", umidade)
 
                 # Check if the current day is different from the previous reading
                 if agora.day != dia_atual:
@@ -140,5 +141,8 @@ def iniciar(horarios, stop_event):
                     indice_horario = 0
                 # Wait for the next time to be checked
                 time.sleep(60)
+            time.sleep(2)
+
+
     except Exception as error:
         print(error.args[0])
