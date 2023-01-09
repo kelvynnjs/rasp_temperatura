@@ -3,12 +3,14 @@ import time
 import openpyxl
 import threading
 import multiprocessing
+
+import requests as requests
 from openpyxl.styles import Font
 
-import Adafruit_DHT
+# import Adafruit_DHT
 
 # Configure the DHT22 sensor
-dispositivo = Adafruit_DHT.DHT22
+# dispositivo = Adafruit_DHT.DHT22
 PIN = 4
 
 # Define the flag variable
@@ -16,9 +18,7 @@ PIN = 4
 
 mutex = threading.Lock()
 
-
 stop_flag = multiprocessing.Value('i', 0)
-
 
 
 def iniciar(horarios, stop_event):
@@ -81,7 +81,17 @@ def iniciar(horarios, stop_event):
         while not stop_event.is_set():
             # print("Stop: ", stop.value)
             # Read data from the sensor
-            umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
+
+            # umidade, temperatura = Adafruit_DHT.read_retry(dispositivo, PIN)
+            URL: str = "http://192.168.1.5:5000"
+
+            data = requests.get(url=URL).json()
+            print("data: ", data)
+
+            temperatura = data["temperatura"]
+            umidade = data["umidade"]
+            print("temperatura", temperatura)
+            print("umidade", umidade)
 
             # umidade, temperatura = 1, 2
 
