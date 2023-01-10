@@ -44,6 +44,8 @@ thread = None
 
 # Define the Event object
 stop_event = threading.Event()
+
+
 @app.route('/start', methods=['POST'])
 def start_app():
     global thread
@@ -68,7 +70,6 @@ def start_app():
     return 'Aplicação iniciada'
 
 
-
 @app.route('/stop', methods=['POST'])
 def stop_app():
     global thread
@@ -81,6 +82,7 @@ def stop_app():
     stop_event.clear()
     msg = 'Aplicação interrompida com sucesso!'
     return msg
+
 
 @app.route('/download')
 def download():

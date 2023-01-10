@@ -1,3 +1,4 @@
-openpyxl
+openpyxl~=3.0.10
 adafruit-circuitpython-dht
-lazy_import
+Flask~=2.2.2
+requests~=2.28.1

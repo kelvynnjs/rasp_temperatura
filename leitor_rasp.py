@@ -11,6 +11,7 @@ from openpyxl.styles import Font
 
 # Configure the DHT22 sensor
 # dispositivo = Adafruit_DHT.DHT22
+
 PIN = 4
 
 # Define the flag variable
@@ -32,7 +33,8 @@ def iniciar(horarios, stop_event):
         sheet1 = wb.active
         sheet1.title = 'Controle de temperatura'
         sheet1.column_dimensions['A'].width = 39
-        sheet1.column_dimensions['B'].width = 16
+        sheet1.column_dimensions['B'].width = 8
+        sheet1.column_dimensions['C'].width = 17
         sheet1.column_dimensions['D'].width = 15
         sheet1.column_dimensions['E'].width = 20
 
@@ -47,7 +49,7 @@ def iniciar(horarios, stop_event):
         sheet1.append([""])
         sheet1.append(["Controle de temperatura - Sensor DHT-22"])
         sheet1.append([""])
-        sheet1.append(['Data', 'Temperatura (ºC)', 'Umidade (%)', 'Hora da Leitura', 'Temperatura Média (ºC)'])
+        sheet1.append(['Data', 'Hora', 'Temperatura (ºC)', 'Umidade (%)', 'Temperatura Média (ºC)'])
 
         cells = ['A5', 'B5', 'C5', 'D5', 'E5']
 
@@ -130,7 +132,7 @@ def iniciar(horarios, stop_event):
                     temperatura_total += temperatura
                     num_leituras += 1
                     # Write the data to the spreadsheet
-                    sheet1.append([agora.strftime("%d/%m/%Y"), temperatura, umidade, agora.strftime("%H:%M:%S"), ''])
+                    sheet1.append([agora.strftime("%d/%m/%Y"), agora.strftime("%H:%M:%S"), temperatura, umidade, ''])
                     # Save the spreadsheet
                     wb.save(os.path.join(os.getcwd(), 'dados.xlsx'))
 
@@ -142,7 +144,6 @@ def iniciar(horarios, stop_event):
                 # Wait for the next time to be checked
                 time.sleep(60)
             time.sleep(2)
-
 
     except Exception as error:
         print(error.args[0])

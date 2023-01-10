@@ -30,101 +30,107 @@
 <div class="container-fluid mt-4">
     <form id="form">
         <!-- Loop through the list of times and create a field for each time -->
-        {% for horario in horarios_verificacao %}
-        <div class="form-group row">
-            <div class="col-sm-8">
-                <input type="text" class="form-control" value="{{ horario }}" name="time" required>
-            </div>
-        </div>
-        {% endfor %}
+        <script>
+            // Load the saved data from the JSON file
+            const horarios_verificacao = {{
+                horarios_verificacao | tojson}};
 
-        {% if horarios_verificacao %}
-        <script>        $('#form').find('input[name="time"]').timepicker({
-            timeFormat: 'HH:mm',
-            dropdown: true
-        });</script>
-        {% endif %}
+            console.log(horarios_verificacao)
+            const times = [];
+
+            setTimeout(()=>{
+
+
+            horarios_verificacao.forEach(elm => times.push(elm))
+            for (const e in horarios_verificacao) {
+                times.push(e)
+            }
+
+            for (const time of times) {
+                addTimeField();
+                $('#form').find('input[name="time"]:last').val(time);
+            }
+            $('#form').find('input[name="time"]').timepicker({
+                timeFormat: 'HH:mm',
+                dropdown: true
+            });
+
+            },140)
+        </script>
+
     </form>
     <div class="d-flex justify-content-between mt-4">
-        <button type="button" class="btn btn-primary" id="start-button">Start</button>
-        <button type="button" class="btn btn-danger" id="stop-button">Stop</button>
-        <button type="button" class="btn btn-secondary" id="add-button">Add</button>
-        <button type="button" class="btn btn-warning" id="download-button">Download</button>
+        <button type="button" class="btn btn-primary" id="start-button">Iniciar</button>
+        <button type="button" class="btn btn-danger" id="stop-button">Parar</button>
+        <button type="button" class="btn btn-secondary" id="add-button">Adicionar</button>
+        <button type="button" class="btn btn-warning" id="download-button">Baixar dados</button>
     </div>
 </div>
 
 
 <!-- Load the saved data from the JSON file -->
 <script>
-    // Load the saved data from the JSON file
-    const horarios_verificacao = {{horarios_verificacao |tojson}};
-
-    console.log(horarios_verificacao)
 
 
     $('#add-button').click(() => {
+        addTimeField();
+    });
 
-        // Create a new input field
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.classList.add('form-control');
-        input.name = 'time'; // Set the name attribute to "time"
-        input.required = true;
 
-        // Create a new checkbox
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.classList.add('ml-auto');
-        checkbox.name = 'enable-time'; // Set the name attribute to "enable-time"
+    $('#start-button').click(() => {
+        // Get all the time input fields
+        const timeInputs = $(':input[name="time"]')
 
-        // Create a new form group element
-        const formGroup = document.createElement('div');
-        formGroup.classList.add('form-group', 'mr-3');
-        formGroup.appendChild(input);
+        // Create a list of selected times
+        const selectedTimes = [];
+        for (const input of timeInputs) {
+            // Only include the time if its corresponding checkbox is checked
+            selectedTimes.push(input.value);
+        }
 
-        // Add the new form group to the form
-        $('#form').append(formGroup);
+        // Send a POST request to the /start route with the selected times
+        console.log(selectedTimes)
+        $.post('/start', {horarios: JSON.stringify(selectedTimes)}, (response) => {
+            console.log(response);
+        });
+    });
 
-        // Initialize the datetime picker plugin for the new input field
-        $('#form').find('input[name="time"]').timepicker({
-            timeFormat: 'HH:mm',
-            dropdown: true
+    $('#stop-button').click(() => {
+        // Get all the time input fields
+        // Send a POST request to the /start route with the selected times
+        $.post('/stop', (response) => {
+            console.log(response);
         });
     });
 
 
-$('#start-button').click(() => {
-    // Get all the time input fields
-    const timeInputs = $(':input[name="time"]')
-
-    // Create a list of selected times
-    const selectedTimes = [];
-    for (const input of timeInputs) {
-        // Only include the time if its corresponding checkbox is checked
-        selectedTimes.push(input.value);
-    }
-
-    // Send a POST request to the /start route with the selected times
-    console.log(selectedTimes)
-    $.post('/start', {horarios: JSON.stringify(selectedTimes)}, (response) => {
-        console.log(response);
-    });
-});
-
-$('#stop-button').click(() => {
-    // Get all the time input fields
-    // Send a POST request to the /start route with the selected times
-    $.post('/stop', (response) => {
-        console.log(response);
-    });
-});
-
-
-    $(document).ready(function() {
-        $("#download-button").click(function() {
+    $(document).ready(function () {
+        $("#download-button").click(function () {
             window.open('/download');
         });
     });
+
+
+   function addTimeField() {
+  const template = `
+    <div class="form-group row mt-2">
+      <div class="col-sm-8">
+        <input type="text" class="form-control" name="time" required>
+      </div>
+      <div class="col-sm-4">
+        <button type="button" class="btn btn-danger remove-button">Remover</button>
+      </div>
+    </div>
+  `;
+  $('#form').append(template);
+  $('#form').find('.remove-button:last').click(function() {
+    $(this).parent().parent().remove();
+  });
+  $('#form').find('input[name="time"]:last').timepicker({
+    timeFormat: 'HH:mm',
+    dropdown: true
+  });
+}
 
 
 </script>
